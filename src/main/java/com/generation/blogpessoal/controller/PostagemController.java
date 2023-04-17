@@ -20,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.generation.blogpessoal.model.Postagem;
 import com.generation.blogpessoal.repository.PostagemRepository;
+import com.generation.blogpessoal.repository.TemaRepository;
 
 import jakarta.validation.Valid;
 
@@ -29,6 +30,9 @@ import jakarta.validation.Valid;
 public class PostagemController {
 	@Autowired
 	private PostagemRepository postagemRepository;
+	
+	@Autowired
+	private TemaRepository temaRepository;
 	
 	@GetMapping
 	public ResponseEntity<List<Postagem>> getAll(){
@@ -53,7 +57,10 @@ public class PostagemController {
 	@PostMapping
 	public ResponseEntity<Postagem> post(@Valid @RequestBody Postagem postagem){
 		// INSERT INTO tb_postagens(titulo, texto) VALUES ("???", "???")
-		return ResponseEntity.status(HttpStatus.CREATED).body(postagemRepository.save(postagem));
+		
+		return temaRepository.findById(postagem.getTema().getId())
+				.map(resposta -> ResponseEntity.status(HttpStatus.CREATED).body(postagemRepository.save(postagem)))
+				.orElse(ResponseEntity.status(HttpStatus.BAD_REQUEST).build());
 	}
 	
 	@PutMapping
@@ -61,7 +68,11 @@ public class PostagemController {
 		// UPDATE tb_postagens SET titulo = "???", texto = "???", data = "???" WHERE id = ?
 		
 		return postagemRepository.findById(postagem.getId())
-				.map(resposta -> ResponseEntity.status(HttpStatus.OK).body(postagemRepository.save(postagem)))
+				.map(resposta -> 
+					temaRepository.findById(postagem.getTema().getId())
+						.map(resposta2 -> ResponseEntity.status(HttpStatus.OK).body(postagemRepository.save(postagem)))
+						.orElse(ResponseEntity.status(HttpStatus.BAD_REQUEST).build())
+				)
 				.orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
 	}
 	
